@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a0e17">
+  <meta name="description" content="Crypto Radar PRO - Analyse technique multi-timeframe BTC & SOL">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Crypto Radar PRO</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    :root {
+      --bg: #0a0e17;
+      --card: #121826;
+      --card-hover: #1a2332;
+      --text: #e8eef7;
+      --muted: #8b9bb4;
+      --blue: #3b82f6;
+      --blue-dim: #1e3a5f;
+      --green: #22c55e;
+      --red: #ef4444;
+      --orange: #f59e0b;
+      --gray: #6b7280;
+      --border: #1e293b;
+      --success: #10b981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.45;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 480px; margin: 0 auto; padding: 12px 14px 40px; }
+    header {
+      text-align: center;
+      padding: 16px 0 12px;
+      position: relative;
+    }
+    .robot {
+      font-size: 2.6rem;
+      line-height: 1;
+      margin-bottom: 4px;
+      transition: transform 0.3s;
+    }
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+    .update-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin: 10px 0 14px;
+      padding: 6px 10px;
+      background: var(--card);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .refresh-btn {
+      background: var(--blue-dim);
+      color: var(--blue);
+      border: none;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .refresh-btn:active { opacity: 0.7; }
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--accent, var(--gray));
+    }
+    .card.buy { --accent: var(--blue); }
+    .card.sell { --accent: var(--red); }
+    .card.wait { --accent: var(--gray); }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .symbol { font-size: 1.15rem; font-weight: 700; }
+    .price { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; }
+    .change {
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .change.up { background: rgba(34,197,94,0.15); color: var(--green); }
+    .change.down { background: rgba(239,68,68,0.15); color: var(--red); }
+    .signal-box {
+      text-align: center;
+      padding: 12px;
+      border-radius: 10px;
+      margin: 12px 0;
+      font-weight: 700;
+      font-size: 1.25rem;
+      letter-spacing: 0.04em;
+    }
+    .signal-box.buy { background: rgba(59,130,246,0.15); color: var(--blue); border: 1px solid rgba(59,130,246,0.3); }
+    .signal-box.sell { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+    .signal-box.wait { background: rgba(107,114,128,0.15); color: var(--gray); border: 1px solid rgba(107,114,128,0.3); }
+    .metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .metric {
+      background: rgba(0,0,0,0.25);
+      padding: 8px 10px;
+      border-radius: 8px;
+    }
+    .metric-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .metric-value { font-size: 1.05rem; font-weight: 700; margin-top: 2px; }
+    .conf-bar {
+      height: 6px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 3px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+    .conf-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.6s ease;
+    }
+    .tf-row {
+      display: flex;
+      gap: 6px;
+      margin: 10px 0;
+      flex-wrap: wrap;
+    }
+    .tf-badge {
+      flex: 1;
+      min-width: 60px;
+      text-align: center;
+      padding: 6px 4px;
+      border-radius: 8px;
+      font-size: 0.7rem;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid var(--border);
+    }
+    .tf-badge .tf-name { color: var(--muted); font-size: 0.6rem; display: block; }
+    .tf-badge .tf-sig { font-size: 1rem; margin-top: 2px; }
+    .horizons {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      margin: 10px 0;
+    }
+    .horizon {
+      text-align: center;
+      padding: 8px 4px;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.2);
+      font-size: 0.7rem;
+    }
+    .horizon .h-label { color: var(--muted); font-size: 0.6rem; display: block; margin-bottom: 3px; }
+    .components {
+      margin-top: 10px;
+      font-size: 0.75rem;
+    }
+    .comp-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .comp-row:last-child { border-bottom: none; }
+    .comp-score { font-weight: 600; }
+    .risk {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      margin-top: 8px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(0,0,0,0.25);
+    }
+    .risk.low { color: var(--green); }
+    .risk.mod { color: var(--orange); }
+    .risk.high { color: var(--red); }
+    .btn-why {
+      width: 100%;
+      margin-top: 12px;
+      padding: 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .btn-why:active, .btn-why.open { background: var(--card-hover); color: var(--text); border-color: var(--blue); }
+    .why-panel {
+      display: none;
+      margin-top: 12px;
+      padding: 12px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 10px;
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+    .why-panel.open { display: block; }
+    .why-panel h4 { font-size: 0.75rem; color: var(--muted); margin: 10px 0 4px; text-transform: uppercase; }
+    .why-panel ul { list-style: none; padding-left: 0; }
+    .why-panel li { padding: 2px 0; }
+    .pos { color: var(--green); }
+    .neg { color: var(--orange); }
+    .chart-section { margin-top: 8px; }
+    .chart-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .chart-tab {
+      flex: 1;
+      padding: 6px;
+      text-align: center;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .chart-tab.active { background: var(--blue-dim); color: var(--blue); border-color: var(--blue); }
+    .chart-container {
+      height: 200px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #0d1117;
+    }
+    .alerts-section {
+      margin: 16px 0;
+    }
+    .alerts-section h3 {
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .alert-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--orange);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      font-size: 0.8rem;
+    }
+    .alert-item.new { border-left-color: var(--blue); }
+    .entry-section {
+      font-size: 0.8rem;
+    }
+    .entry-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .entry-item {
+      background: rgba(0,0,0,0.25);
+      padding: 8px;
+      border-radius: 8px;
+    }
+    .entry-item .label { font-size: 0.65rem; color: var(--muted); }
+    .entry-item .val { font-weight: 600; margin-top: 2px; }
+    .disclaimer {
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-align: center;
+      padding: 16px 8px;
+      line-height: 1.5;
+      border-top: 1px solid var(--border);
+      margin-top: 20px;
+    }
+    .howto {
+      margin-top: 16px;
+    }
+    .howto details {
+      background: var(--card);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      padding: 12px 14px;
+      font-size: 0.8rem;
+    }
+    .howto summary {
+      font-weight: 600;
+      cursor: pointer;
+      list-style: none;
+    }
+    .howto summary::-webkit-details-marker { display: none; }
+    .howto p, .howto ol { margin-top: 10px; color: var(--muted); }
+    .howto ol { padding-left: 18px; }
+    .howto li { margin-bottom: 6px; }
+    .error-box {
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      color: var(--red);
+      padding: 12px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 0.85rem;
+      margin: 10px 0;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .stale { opacity: 0.7; }
+    .stale-badge {
+      display: inline-block;
+      background: rgba(245,158,11,0.2);
+      color: var(--orange);
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="robot" id="robot">🤖😐</div>
+      <h1>Crypto Radar PRO</h1>
+      <div class="subtitle">Analyse multi-timeframe · BTC & SOL</div>
+    </header>
+
+    <div class="update-bar">
+      <span id="lastUpdate">Chargement...</span>
+      <button class="refresh-btn" id="refreshBtn">Actualiser</button>
+    </div>
+
+    <div id="app">
+      <div class="loading">
+        <div class="spinner"></div>
+        Récupération des données de marché...
+      </div>
+    </div>
+
+    <div class="alerts-section" id="alertsSection" style="display:none;">
+      <h3>🔔 Alertes</h3>
+      <div id="alertsList"></div>
+    </div>
+
+    <div class="howto">
+      <details>
+        <summary>📚 Comment fonctionne Crypto Radar ?</summary>
+        <ol>
+          <li><strong>Données</strong> : Prix et bougies (klines) récupérés en temps réel depuis l'API publique Binance (data-api.binance.vision) — aucune clé API requise.</li>
+          <li><strong>Indicateurs</strong> : Sur chaque timeframe (15m, 1h, 4h, 1j) : SMA 20/50/200, EMA 20/50, RSI 14, MACD (12/26/9), ATR 14, Bandes de Bollinger, volume relatif, structure (plus hauts/bas).</li>
+          <li><strong>Multi-timeframe</strong> : Chaque TF reçoit un score de tendance. L'alignement (hausse / neutre / baisse) influence fortement la confiance.</li>
+          <li><strong>Score global</strong> : Pondération — Tendance 30 %, Momentum 25 %, Structure 20 %, Volume 15 %, Volatilité 10 %. Moyenne pondérée des TF (poids plus élevé sur 4h et 1j).</li>
+          <li><strong>Confiance</strong> : Élevée seulement si les timeframes sont cohérents et que les confirmations croisées (prix vs moyennes, MACD, volume) sont présentes. Sinon → ATTENDRE.</li>
+          <li><strong>Signal</strong> : Score &gt; 65 + confiance &gt; 55 % → ACHAT. Score &lt; 35 + confiance &gt; 55 % → VENTE. Sinon ATTENDRE. Le risque (volatilité, divergence TF) module l'affichage.</li>
+        </ol>
+        <p>Les zones d'entrée / stop / objectifs sont purement techniques et indicatives. Ceci n'est <strong>pas</strong> un conseil financier.</p>
+      </details>
+    </div>
+
+    <div class="disclaimer">
+      Crypto Radar PRO est un outil d'analyse algorithmique expérimental. Les marchés crypto sont extrêmement volatils. Aucun signal ne garantit une hausse ou une baisse. Ceci ne constitue pas un conseil financier. N'investissez que ce que vous pouvez vous permettre de perdre.
+    </div>
+  </div>
+
+  <script>
+    // ===================== CONFIG =====================
+    const API_BASE = 'https://data-api.binance.vision/api/v3';
+    const SYMBOLS = [
+      { id: 'BTC', pair: 'BTCUSDT', name: 'Bitcoin' },
+      { id: 'SOL', pair: 'SOLUSDT', name: 'Solana' }
+    ];
+    const INTERVALS = {
+      '15m': { label: '15m', weight: 0.15, group: 'short' },
+      '1h':  { label: '1h',  weight: 0.25, group: 'short' },
+      '4h':  { label: '4h',  weight: 0.30, group: 'swing' },
+      '1d':  { label: '1j',  weight: 0.30, group: 'trend' }
+    };
+    const CHART_INTERVALS = ['1h', '4h', '1d', '1w'];
+    const REFRESH_MS = 45000;
+    const STALE_MS = 8 * 60 * 1000;
+
+    // Weights for components
+    const COMP_WEIGHTS = {
+      trend: 0.30,
+      momentum: 0.25,
+      structure: 0.20,
+      volume: 0.15,
+      volatility: 0.10
+    };
+
+    // ===================== STATE =====================
+    let state = {
+      data: {},
+      lastFetch: null,
+      alerts: [],
+      charts: {},
+      activeChartInterval: { BTC: '4h', SOL: '4h' },
+      loading: true,
+      error: null
+    };
+
+    // ===================== UTILS =====================
+    function formatPrice(p) {
+      if (p >= 1000) return p.toLocaleString('fr-FR', { maximumFractionDigits: 0 });
+      if (p >= 1) return p.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return p.toLocaleString('fr-FR', { minimumFractionDigits: 4, maximumFractionDigits: 6 });
+    }
+    function formatPct(p) {
+      const sign = p >= 0 ? '+' : '';
+      return sign + p.toFixed(2) + ' %';
+    }
+    function nowStr() {
+      return new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    }
+    function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+    // ===================== INDICATORS =====================
+    function sma(arr, period) {
+      const out = new Array(arr.length).fill(null);
+      let sum = 0;
+      for (let i = 0; i < arr.length; i++) {
+        sum += arr[i];
+        if (i >= period) sum -= arr[i - period];
+        if (i >= period - 1) out[i] = sum / period;
+      }
+      return out;
+    }
+    function ema(arr, period) {
+      const out = new Array(arr.length).fill(null);
+      const k = 2 / (period + 1);
+      let prev = null;
+      for (let i = 0; i < arr.length; i++) {
+        if (arr[i] == null) continue;
+        if (prev === null) {
+          // seed with SMA of first period
+          if (i >= period - 1) {
+            let s = 0;
+            for (let j = i - period + 1; j <= i; j++) s += arr[j];
+            prev = s / period;
+            out[i] = prev;
+          }
+        } else {
+          prev = arr[i] * k + prev * (1 - k);
+          out[i] = prev;
+        }
+      }
+      return out;
+    }
+    function rsi(closes, period = 14) {
+      const out = new Array(closes.length).fill(null);
+      if (closes.length < period + 1) return out;
+      let gains = 0, losses = 0;
+      for (let i = 1; i <= period; i++) {
+        const d = closes[i] - closes[i - 1];
+        if (d >= 0) gains += d; else losses -= d;
+      }
+      let avgGain = gains / period;
+      let avgLoss = losses / period;
+      out[period] = avgLoss === 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss));
+      for (let i = period + 1; i < closes.length; i++) {
+        const d = closes[i] - closes[i - 1];
+        const g = d > 0 ? d : 0;
+        const l = d < 0 ? -d : 0;
+        avgGain = (avgGain * (period - 1) + g) / period;
+        avgLoss = (avgLoss * (period - 1) + l) / period;
+        out[i] = avgLoss === 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss));
+      }
+      return out;
+    }
+    function macd(closes, fast = 12, slow = 26, signal = 9) {
+      const emaFast = ema(closes, fast);
+      const emaSlow = ema(closes, slow);
+      const macdLine = closes.map((_, i) =>
+        (emaFast[i] != null && emaSlow[i] != null) ? emaFast[i] - emaSlow[i] : null
+      );
+      const signalLine = ema(macdLine.map(v => v == null ? 0 : v), signal);
+      // fix nulls in signal
+      const hist = macdLine.map((m, i) =>
+        (m != null && signalLine[i] != null) ? m - signalLine[i] : null
+      );
+      return { macd: macdLine, signal: signalLine, hist };
+    }
+    function atr(highs, lows, closes, period = 14) {
+      const tr = new Array(closes.length).fill(null);
+      for (let i = 1; i < closes.length; i++) {
+        const hl = highs[i] - lows[i];
+        const hc = Math.abs(highs[i] - closes[i - 1]);
+        const lc = Math.abs(lows[i] - closes[i - 1]);
+        tr[i] = Math.max(hl, hc, lc);
+      }
+      return sma(tr.map(v => v == null ? 0 : v), period);
+    }
+    function bollinger(closes, period = 20, mult = 2) {
+      const mid = sma(closes, period);
+      const upper = new Array(closes.length).fill(null);
+      const lower = new Array(closes.length).fill(null);
+      for (let i = period - 1; i < closes.length; i++) {
+        let sumSq = 0;
+        for (let j = i - period + 1; j <= i; j++) {
+          sumSq += (closes[j] - mid[i]) ** 2;
+        }
+        const std = Math.sqrt(sumSq / period);
+        upper[i] = mid[i] + mult * std;
+        lower[i] = mid[i] - mult * std;
+      }
+      return { mid, upper, lower };
+    }
+
+    // ===================== SCORING =====================
+    function scoreTimeframe(candles) {
+      if (!candles || candles.length < 50) {
+        return { score: 50, components: {}, signal: 'wait', details: {} };
+      }
+      const closes = candles.map(c => c.c);
+      const highs = candles.map(c => c.h);
+      const lows = candles.map(c => c.l);
+      const vols = candles.map(c => c.v);
+      const n = closes.length;
+      const price = closes[n - 1];
+
+      const sma20 = sma(closes, 20);
+      const sma50 = sma(closes, 50);
+      const sma200 = sma(closes, Math.min(200, n - 1));
+      const ema20 = ema(closes, 20);
+      const ema50 = ema(closes, 50);
+      const rsi14 = rsi(closes, 14);
+      const macdData = macd(closes);
+      const atr14 = atr(highs, lows, closes, 14);
+      const bb = bollinger(closes, 20, 2);
+
+      const last = (arr) => {
+        for (let i = arr.length - 1; i >= 0; i--) if (arr[i] != null) return arr[i];
+        return null;
+      };
+      const prev = (arr, k = 1) => {
+        let count = 0;
+        for (let i = arr.length - 1; i >= 0; i--) {
+          if (arr[i] != null) {
+            if (count === k) return arr[i];
+            count++;
+          }
+        }
+        return null;
+      };
+
+      const s20 = last(sma20), s50 = last(sma50), s200 = last(sma200);
+      const e20 = last(ema20), e50 = last(ema50);
+      const r = last(rsi14);
+      const m = last(macdData.macd), sig = last(macdData.signal), h = last(macdData.hist);
+      const hPrev = prev(macdData.hist, 1);
+      const a = last(atr14);
+      const bbU = last(bb.upper), bbL = last(bb.lower), bbM = last(bb.mid);
+
+      // --- TREND (0-100) ---
+      let trend = 50;
+      if (s20 && s50) {
+        if (price > s20 && price > s50) trend += 15;
+        else if (price < s20 && price < s50) trend -= 15;
+        if (s20 > s50) trend += 10; else trend -= 10;
+      }
+      if (e20 && e50) {
+        if (e20 > e50) trend += 12; else trend -= 12;
+        const slope20 = e20 - (prev(ema20, 3) || e20);
+        if (slope20 > 0) trend += 8; else trend -= 8;
+      }
+      if (s200) {
+        if (price > s200) trend += 12; else trend -= 12;
+      }
+      trend = clamp(trend, 0, 100);
+
+      // --- MOMENTUM ---
+      let momentum = 50;
+      if (r != null) {
+        if (r > 55 && r < 75) momentum += 15;
+        else if (r >= 75) momentum += 5; // overbought caution
+        else if (r < 45 && r > 25) momentum -= 15;
+        else if (r <= 25) momentum -= 5;
+        else if (r >= 45 && r <= 55) momentum += 0;
+      }
+      if (m != null && sig != null) {
+        if (m > sig && m > 0) momentum += 15;
+        else if (m < sig && m < 0) momentum -= 15;
+        else if (m > sig) momentum += 8;
+        else momentum -= 8;
+      }
+      if (h != null && hPrev != null) {
+        if (h > hPrev && h > 0) momentum += 10;
+        else if (h < hPrev && h < 0) momentum -= 10;
+      }
+      momentum = clamp(momentum, 0, 100);
+
+      // --- STRUCTURE ---
+      let structure = 50;
+      // recent higher highs / lower lows (last 10 bars)
+      const look = Math.min(12, n - 1);
+      let hh = 0, ll = 0, hl = 0, lh = 0;
+      for (let i = n - look; i < n - 1; i++) {
+        if (highs[i + 1] > highs[i]) hh++;
+        if (lows[i + 1] < lows[i]) ll++;
+        if (lows[i + 1] > lows[i]) hl++;
+        if (highs[i + 1] < highs[i]) lh++;
+      }
+      if (hh > ll) structure += 15;
+      else if (ll > hh) structure -= 15;
+      if (hl > lh) structure += 10;
+      else structure -= 10;
+      // breakout of recent range
+      const recentHigh = Math.max(...highs.slice(n - 20, n - 1));
+      const recentLow = Math.min(...lows.slice(n - 20, n - 1));
+      if (price > recentHigh) structure += 15;
+      else if (price < recentLow) structure -= 15;
+      structure = clamp(structure, 0, 100);
+
+      // --- VOLUME ---
+      let volumeScore = 50;
+      const volSma = sma(vols, 20);
+      const lastVol = vols[n - 1];
+      const avgVol = last(volSma);
+      if (avgVol && lastVol) {
+        const rel = lastVol / avgVol;
+        const priceUp = closes[n - 1] > closes[n - 2];
+        if (rel > 1.3 && priceUp) volumeScore += 25;
+        else if (rel > 1.3 && !priceUp) volumeScore -= 15;
+        else if (rel < 0.7) volumeScore -= 10;
+        else if (rel > 1.0 && priceUp) volumeScore += 10;
+      }
+      volumeScore = clamp(volumeScore, 0, 100);
+
+      // --- VOLATILITY (prefer moderate) ---
+      let vola = 50;
+      if (a && price) {
+        const atrPct = (a / price) * 100;
+        if (atrPct < 1.5) vola = 60; // calm
+        else if (atrPct < 3) vola = 55;
+        else if (atrPct < 5) vola = 45;
+        else vola = 30; // high vol reduces score slightly (risk)
+      }
+      if (bbU && bbL && bbM) {
+        const width = (bbU - bbL) / bbM;
+        if (width > 0.08) vola -= 10;
+      }
+      vola = clamp(vola, 0, 100);
+
+      // Cross confirmation penalty / boost
+      let confBoost = 0;
+      // false signal filter
+      if (r > 55 && (s200 && price < s200) && (m != null && m < 0)) {
+        // RSI bullish but under 200 & MACD neg → strong filter
+        momentum = Math.max(20, momentum - 25);
+        confBoost -= 15;
+      }
+      if (r < 45 && (s200 && price > s200) && (m != null && m > 0)) {
+        momentum = Math.min(80, momentum + 25);
+        confBoost += 10;
+      }
+      // EMA cross confirmation
+      if (e20 && e50 && price > e20 && e20 > e50 && m > 0) confBoost += 8;
+      if (e20 && e50 && price < e20 && e20 < e50 && m < 0) confBoost -= 8;
+
+      const components = {
+        trend: Math.round(trend),
+        momentum: Math.round(momentum),
+        structure: Math.round(structure),
+        volume: Math.round(volumeScore),
+        volatility: Math.round(vola)
+      };
+
+      let score = 
+        components.trend * COMP_WEIGHTS.trend +
+        components.momentum * COMP_WEIGHTS.momentum +
+        components.structure * COMP_WEIGHTS.structure +
+        components.volume * COMP_WEIGHTS.volume +
+        components.volatility * COMP_WEIGHTS.volatility;
+
+      score = clamp(score + confBoost * 0.3, 0, 100);
+
+      let signal = 'wait';
+      if (score >= 62) signal = 'buy';
+      else if (score <= 38) signal = 'sell';
+
+      return {
+        score: Math.round(score),
+        components,
+        signal,
+        details: {
+          price, rsi: r, macd: m, macdHist: h, ema20: e20, ema50: e50,
+          sma20: s20, sma50: s50, sma200: s200, atr: a,
+          bbUpper: bbU, bbLower: bbL, atrPct: a && price ? (a / price * 100) : null,
+          recentHigh, recentLow
+        }
+      };
+    }
+
+    function aggregateSymbol(tfResults) {
+      // Weighted score across TF
+      let totalW = 0, weighted = 0;
+      const signals = {};
+      const comps = { trend: 0, momentum: 0, structure: 0, volume: 0, volatility: 0 };
+      let wSum = 0;
+
+      for (const [tf, res] of Object.entries(tfResults)) {
+        const w = INTERVALS[tf].weight;
+        weighted += res.score * w;
+        totalW += w;
+        signals[tf] = res.signal;
+        for (const k of Object.keys(comps)) {
+          comps[k] += res.components[k] * w;
+        }
+        wSum += w;
+      }
+      const score = Math.round(weighted / totalW);
+      for (const k of Object.keys(comps)) comps[k] = Math.round(comps[k] / wSum);
+
+      // Alignment
+      const vals = Object.values(signals);
+      const buyCount = vals.filter(s => s === 'buy').length;
+      const sellCount = vals.filter(s => s === 'sell').length;
+      let alignment = 'mixed';
+      if (buyCount >= 3) alignment = 'bull';
+      else if (sellCount >= 3) alignment = 'bear';
+      else if (buyCount === 0 && sellCount === 0) alignment = 'neutral';
+
+      // Confidence
+      let confidence = 50;
+      if (alignment === 'bull' || alignment === 'bear') confidence += 25;
+      else if (buyCount >= 2 || sellCount >= 2) confidence += 10;
+      else confidence -= 10;
+
+      // Agreement of components
+      const spread = Math.max(...Object.values(comps)) - Math.min(...Object.values(comps));
+      if (spread < 20) confidence += 10;
+      else if (spread > 40) confidence -= 10;
+
+      // Higher TF agreement bonus
+      if (signals['4h'] === signals['1d'] && signals['4h'] !== 'wait') confidence += 12;
+      if (signals['1h'] === signals['4h'] && signals['1h'] !== 'wait') confidence += 8;
+
+      confidence = clamp(Math.round(confidence), 15, 95);
+
+      // Final signal with confidence gate
+      let finalSignal = 'wait';
+      if (score >= 65 && confidence >= 55) finalSignal = 'buy';
+      else if (score <= 35 && confidence >= 55) finalSignal = 'sell';
+      else if (score >= 58 && confidence >= 70 && (alignment === 'bull')) finalSignal = 'buy';
+      else if (score <= 42 && confidence >= 70 && (alignment === 'bear')) finalSignal = 'sell';
+
+      // Risk
+      let risk = 'mod';
+      const avgAtrPct = Object.values(tfResults).reduce((s, r) => s + (r.details.atrPct || 2), 0) / Object.keys(tfResults).length;
+      if (avgAtrPct > 4.5 || alignment === 'mixed') risk = 'high';
+      else if (avgAtrPct < 2 && (alignment === 'bull' || alignment === 'bear') && confidence > 70) risk = 'low';
+      else if (avgAtrPct > 3.2) risk = 'high';
+
+      // Horizons
+      const shortScore = (tfResults['15m'].score * 0.4 + tfResults['1h'].score * 0.6);
+      const swingScore = tfResults['4h'].score;
+      const trendScore = tfResults['1d'].score;
+      const horizonSig = (sc) => sc >= 60 ? 'buy' : sc <= 40 ? 'sell' : 'wait';
+
+      return {
+        score,
+        components: comps,
+        confidence,
+        signal: finalSignal,
+        alignment,
+        risk,
+        signals,
+        horizons: {
+          short: { score: Math.round(shortScore), signal: horizonSig(shortScore) },
+          swing: { score: Math.round(swingScore), signal: horizonSig(swingScore) },
+          trend: { score: Math.round(trendScore), signal: horizonSig(trendScore) }
+        },
+        details: tfResults['4h'].details // primary for display
+      };
+    }
+
+    // ===================== EXPLANATION =====================
+    function buildExplanation(sym, agg, tfResults) {
+      const d = agg.details;
+      const pos = [], neg = [];
+      let text = '';
+
+      if (d.ema20 && d.price > d.ema20) pos.push('Prix > EMA 20');
+      else if (d.ema20) neg.push('Prix < EMA 20');
+      if (d.ema50 && d.price > d.ema50) pos.push('Prix > EMA 50');
+      else if (d.ema50) neg.push('Prix < EMA 50');
+      if (d.sma200 && d.price > d.sma200) pos.push('Prix > SMA 200 (tendance LT haussière)');
+      else if (d.sma200) neg.push('Prix < SMA 200 (tendance LT baissière)');
+      if (d.macd != null && d.macd > 0) pos.push('MACD positif');
+      else if (d.macd != null) neg.push('MACD négatif');
+      if (d.macdHist != null && d.macdHist > 0) pos.push('Histogramme MACD positif');
+      if (d.rsi != null) {
+        if (d.rsi > 50 && d.rsi < 70) pos.push(`RSI à ${d.rsi.toFixed(0)} (dynamique)`);
+        else if (d.rsi >= 70) neg.push(`RSI à ${d.rsi.toFixed(0)} (proche surachat)`);
+        else if (d.rsi < 40) neg.push(`RSI à ${d.rsi.toFixed(0)} (faible)`);
+      }
+      if (agg.alignment === 'bull') pos.push('Alignement multi-timeframe haussier');
+      else if (agg.alignment === 'bear') neg.push('Alignement multi-timeframe baissier');
+      else neg.push('Timeframes contradictoires');
+
+      if (agg.signals['1h'] === 'buy' && agg.signals['4h'] === 'buy') {
+        text = `${sym} se situe au-dessus de ses moyennes mobiles clés. Le MACD reste orienté positivement et le momentum est favorable sur les unités 1h et 4h.`;
+      } else if (agg.signals['1h'] === 'sell' && agg.signals['4h'] === 'sell') {
+        text = `${sym} évolue sous ses moyennes mobiles principales. Le MACD est négatif et le momentum baissier est confirmé sur plusieurs unités de temps.`;
+      } else {
+        text = `${sym} présente un mélange de signaux. Les indicateurs ne sont pas suffisamment alignés pour un biais directionnel fort.`;
+      }
+      if (d.rsi) text += ` RSI à ${d.rsi.toFixed(0)}.`;
+      if (agg.horizons.trend.signal === 'wait') text += ' La tendance journalière reste encore neutre.';
+
+      return { text, pos, neg };
+    }
+
+    // ===================== ENTRY ZONES =====================
+    function buildEntryZones(details, signal) {
+      if (!details || !details.price) return null;
+      const p = details.price;
+      const atr = details.atr || p * 0.02;
+      const support = details.bbLower || details.recentLow || p - atr * 1.5;
+      const resist = details.bbUpper || details.recentHigh || p + atr * 1.5;
+      let entry, stop, t1, t2;
+      if (signal === 'buy') {
+        entry = Math.min(p, (support + p) / 2);
+        stop = support - atr * 0.5;
+        t1 = p + atr * 1.5;
+        t2 = p + atr * 3;
+      } else if (signal === 'sell') {
+        entry = Math.max(p, (resist + p) / 2);
+        stop = resist + atr * 0.5;
+        t1 = p - atr * 1.5;
+        t2 = p - atr * 3;
+      } else {
+        entry = p;
+        stop = p - atr;
+        t1 = p + atr;
+        t2 = p + atr * 2;
+      }
+      return {
+        entry: formatPrice(entry),
+        support: formatPrice(support),
+        resist: formatPrice(resist),
+        stop: formatPrice(stop),
+        t1: formatPrice(t1),
+        t2: formatPrice(t2)
+      };
+    }
+
+    // ===================== ALERTS =====================
+    function detectAlerts(prevData, newData) {
+      const alerts = [];
+      for (const sym of SYMBOLS) {
+        const id = sym.id;
+        if (!newData[id] || !newData[id].agg) continue;
+        const agg = newData[id].agg;
+        const prev = prevData[id] && prevData[id].agg;
+
+        if (agg.alignment === 'bull' && (!prev || prev.alignment !== 'bull')) {
+          alerts.push({ type: 'new', text: `${id} : signal d'achat confirmé sur plusieurs unités de temps` });
+        }
+        if (agg.alignment === 'bear' && (!prev || prev.alignment !== 'bear')) {
+          alerts.push({ type: 'new', text: `${id} : alignement baissier multi-timeframe détecté` });
+        }
+        if (agg.signal === 'buy' && prev && prev.signal !== 'buy') {
+          alerts.push({ type: 'new', text: `${id} : passage en signal ACHAT` });
+        }
+        if (agg.signal === 'sell' && prev && prev.signal !== 'sell') {
+          alerts.push({ type: 'new', text: `${id} : passage en signal VENTE` });
+        }
+        // Momentum flip on 4h
+        const tf4 = newData[id].tfs && newData[id].tfs['4h'];
+        const prev4 = prevData[id] && prevData[id].tfs && prevData[id].tfs['4h'];
+        if (tf4 && prev4 && tf4.details.macdHist != null && prev4.details.macdHist != null) {
+          if (tf4.details.macdHist > 0 && prev4.details.macdHist <= 0) {
+            alerts.push({ type: 'mom', text: `${id} : retournement de momentum haussier (4h)` });
+          }
+          if (tf4.details.macdHist < 0 && prev4.details.macdHist >= 0) {
+            alerts.push({ type: 'mom', text: `${id} : retournement de momentum baissier (4h)` });
+          }
+        }
+      }
+      return alerts.slice(0, 5);
+    }
+
+    // ===================== DATA FETCH =====================
+    async function fetchKlines(pair, interval, limit = 200) {
+      const url = `${API_BASE}/klines?symbol=${pair}&interval=${interval}&limit=${limit}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const raw = await res.json();
+      return raw.map(k => ({
+        t: k[0],
+        o: parseFloat(k[1]),
+        h: parseFloat(k[2]),
+        l: parseFloat(k[3]),
+        c: parseFloat(k[4]),
+        v: parseFloat(k[5])
+      }));
+    }
+    async function fetchTicker(pair) {
+      const url = `${API_BASE}/ticker/24hr?symbol=${pair}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const d = await res.json();
+      return {
+        price: parseFloat(d.lastPrice),
+        changePct: parseFloat(d.priceChangePercent),
+        high: parseFloat(d.highPrice),
+        low: parseFloat(d.lowPrice),
+        volume: parseFloat(d.volume)
+      };
+    }
+
+    async function loadAll() {
+      const prevData = { ...state.data };
+      state.loading = true;
+      state.error = null;
+      render();
+
+      try {
+        const results = {};
+        for (const sym of SYMBOLS) {
+          const ticker = await fetchTicker(sym.pair);
+          const tfs = {};
+          for (const tf of Object.keys(INTERVALS)) {
+            const candles = await fetchKlines(sym.pair, tf, 200);
+            tfs[tf] = scoreTimeframe(candles);
+            tfs[tf].candles = candles; // keep for chart
+          }
+          const agg = aggregateSymbol(tfs);
+          results[sym.id] = { ticker, tfs, agg, pair: sym.pair };
+        }
+        const newAlerts = detectAlerts(prevData, results);
+        state.data = results;
+        state.lastFetch = Date.now();
+        state.alerts = [...newAlerts, ...state.alerts].slice(0, 8);
+        state.loading = false;
+        state.error = null;
+        updateRobot();
+        render();
+        // init charts after DOM update
+        setTimeout(() => {
+          for (const sym of SYMBOLS) {
+            initChart(sym.id);
+          }
+        }, 50);
+      } catch (e) {
+        console.error(e);
+        state.loading = false;
+        state.error = e.message || 'Erreur réseau';
+        render();
+      }
+    }
+
+    function updateRobot() {
+      const scores = Object.values(state.data).map(d => d.agg.score);
+      if (!scores.length) {
+        document.getElementById('robot').textContent = '🤖😐';
+        return;
+      }
+      const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+      const el = document.getElementById('robot');
+      if (avg >= 62) el.textContent = '🤖🙂';
+      else if (avg <= 38) el.textContent = '🤖😟';
+      else el.textContent = '🤖😐';
+    }
+
+    // ===================== CHART =====================
+    function initChart(symId) {
+      const container = document.getElementById(`chart-${symId}`);
+      if (!container) return;
+      // destroy previous
+      if (state.charts[symId]) {
+        try { state.charts[symId].remove(); } catch(e) {}
+      }
+      const chart = LightweightCharts.createChart(container, {
+        width: container.clientWidth,
+        height: 200,
+        layout: {
+          background: { color: '#0d1117' },
+          textColor: '#8b9bb4'
+        },
+        grid: {
+          vertLines: { color: '#1e293b' },
+          horzLines: { color: '#1e293b' }
+        },
+        rightPriceScale: { borderColor: '#1e293b' },
+        timeScale: { borderColor: '#1e293b', timeVisible: true },
+        crosshair: { mode: 0 }
+      });
+      const candleSeries = chart.addCandlestickSeries({
+        upColor: '#22c55e',
+        downColor: '#ef4444',
+        borderUpColor: '#22c55e',
+        borderDownColor: '#ef4444',
+        wickUpColor: '#22c55e',
+        wickDownColor: '#ef4444'
+      });
+      const ema20Series = chart.addLineSeries({ color: '#3b82f6', lineWidth: 1, title: 'EMA20' });
+      const ema50Series = chart.addLineSeries({ color: '#a78bfa', lineWidth: 1, title: 'EMA50' });
+      const sma200Series = chart.addLineSeries({ color: '#f59e0b', lineWidth: 1, title: 'SMA200' });
+
+      state.charts[symId] = { chart, candleSeries, ema20Series, ema50Series, sma200Series };
+      updateChartData(symId);
+      // resize observer
+      const ro = new ResizeObserver(() => {
+        if (state.charts[symId]) {
+          state.charts[symId].chart.applyOptions({ width: container.clientWidth });
+        }
+      });
+      ro.observe(container);
+    }
+
+    function updateChartData(symId) {
+      const ch = state.charts[symId];
+      if (!ch || !state.data[symId]) return;
+      const interval = state.activeChartInterval[symId] || '4h';
+      // map 1w to 1d for simplicity if needed, but fetch 1w
+      let candles;
+      if (interval === '1w') {
+        // use 1d and resample roughly or just fetch 1w
+        fetchKlines(state.data[symId].pair, '1w', 100).then(c => {
+          applyChartCandles(symId, c);
+        }).catch(() => {});
+        return;
+      }
+      const tfData = state.data[symId].tfs[interval];
+      if (tfData && tfData.candles) {
+        applyChartCandles(symId, tfData.candles);
+      } else {
+        fetchKlines(state.data[symId].pair, interval, 150).then(c => applyChartCandles(symId, c));
+      }
+    }
+
+    function applyChartCandles(symId, candles) {
+      const ch = state.charts[symId];
+      if (!ch) return;
+      const data = candles.map(c => ({
+        time: Math.floor(c.t / 1000),
+        open: c.o, high: c.h, low: c.l, close: c.c
+      }));
+      ch.candleSeries.setData(data);
+
+      const closes = candles.map(c => c.c);
+      const e20 = ema(closes, 20);
+      const e50 = ema(closes, 50);
+      const s200 = sma(closes, Math.min(200, closes.length - 1));
+
+      const toLine = (arr) => candles.map((c, i) => arr[i] != null ? { time: Math.floor(c.t / 1000), value: arr[i] } : null).filter(Boolean);
+      ch.ema20Series.setData(toLine(e20));
+      ch.ema50Series.setData(toLine(e50));
+      ch.sma200Series.setData(toLine(s200));
+      ch.chart.timeScale().fitContent();
+    }
+
+    // ===================== RENDER =====================
+    function sigEmoji(s) {
+      if (s === 'buy') return '🔵';
+      if (s === 'sell') return '🔴';
+      return '⚪';
+    }
+    function sigLabel(s) {
+      if (s === 'buy') return 'ACHAT';
+      if (s === 'sell') return 'VENTE';
+      return 'ATTENDRE';
+    }
+    function sigClass(s) {
+      if (s === 'buy') return 'buy';
+      if (s === 'sell') return 'sell';
+      return 'wait';
+    }
+    function riskLabel(r) {
+      if (r === 'low') return { text: 'FAIBLE', cls: 'low' };
+      if (r === 'high') return { text: 'ÉLEVÉ', cls: 'high' };
+      return { text: 'MODÉRÉ', cls: 'mod' };
+    }
+
+    function renderCard(sym) {
+      const d = state.data[sym.id];
+      if (!d) return '';
+      const agg = d.agg;
+      const ticker = d.ticker;
+      const exp = buildExplanation(sym.id, agg, d.tfs);
+      const zones = buildEntryZones(agg.details, agg.signal);
+      const risk = riskLabel(agg.risk);
+      const isStale = state.lastFetch && (Date.now() - state.lastFetch > STALE_MS);
+
+      const tfBadges = Object.keys(INTERVALS).map(tf => {
+        const s = agg.signals[tf];
+        return `<div class="tf-badge">
+          <span class="tf-name">${INTERVALS[tf].label}</span>
+          <span class="tf-sig">${sigEmoji(s)}</span>
+        </div>`;
+      }).join('');
+
+      const horizons = `
+        <div class="horizons">
+          <div class="horizon">
+            <span class="h-label">Court terme</span>
+            ${sigEmoji(agg.horizons.short.signal)} ${sigLabel(agg.horizons.short.signal)}
+          </div>
+          <div class="horizon">
+            <span class="h-label">Swing</span>
+            ${sigEmoji(agg.horizons.swing.signal)} ${sigLabel(agg.horizons.swing.signal)}
+          </div>
+          <div class="horizon">
+            <span class="h-label">Tendance</span>
+            ${sigEmoji(agg.horizons.trend.signal)} ${sigLabel(agg.horizons.trend.signal)}
+          </div>
+        </div>`;
+
+      const comps = Object.entries(agg.components).map(([k, v]) => {
+        const labels = { trend: 'Tendance', momentum: 'Momentum', structure: 'Structure', volume: 'Volume', volatility: 'Volatilité' };
+        return `<div class="comp-row"><span>${labels[k]}</span><span class="comp-score">${v}/100</span></div>`;
+      }).join('');
+
+      const chartTabs = CHART_INTERVALS.map(iv => {
+        const labels = { '1h': '1H', '4h': '4H', '1d': '1J', '1w': '1S' };
+        const active = (state.activeChartInterval[sym.id] || '4h') === iv ? 'active' : '';
+        return `<button class="chart-tab ${active}" data-sym="${sym.id}" data-iv="${iv}">${labels[iv]}</button>`;
+      }).join('');
+
+      return `
+        <div class="card ${sigClass(agg.signal)} ${isStale ? 'stale' : ''}" id="card-${sym.id}">
+          <div class="card-header">
+            <div>
+              <div class="symbol">${sym.id} <span style="font-weight:400;color:var(--muted);font-size:0.8rem">${sym.name}</span></div>
+              <div class="price">$${formatPrice(ticker.price)}</div>
+            </div>
+            <div class="change ${ticker.changePct >= 0 ? 'up' : 'down'}">${formatPct(ticker.changePct)}</div>
+          </div>
+
+          <div class="signal-box ${sigClass(agg.signal)}">
+            ${sigEmoji(agg.signal)} ${sigLabel(agg.signal)}
+            ${isStale ? '<span class="stale-badge">données anciennes</span>' : ''}
+          </div>
+
+          <div class="metrics">
+            <div class="metric">
+              <div class="metric-label">Score</div>
+              <div class="metric-value">${agg.score}/100</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Confiance</div>
+              <div class="metric-value">${agg.confidence} %</div>
+              <div class="conf-bar"><div class="conf-fill" style="width:${agg.confidence}%;background:${agg.confidence > 70 ? 'var(--blue)' : agg.confidence > 50 ? 'var(--orange)' : 'var(--gray)'}"></div></div>
+            </div>
+          </div>
+
+          <div class="tf-row">${tfBadges}</div>
+          ${horizons}
+
+          <div class="components">${comps}</div>
+
+          <div class="risk ${risk.cls}">Niveau de risque : ${risk.text}</div>
+
+          <div class="chart-section">
+            <div class="chart-tabs">${chartTabs}</div>
+            <div class="chart-container" id="chart-${sym.id}"></div>
+          </div>
+
+          ${zones ? `
+          <div class="entry-section" style="margin-top:12px">
+            <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px">Zones techniques indicatives (non garanties)</div>
+            <div class="entry-grid">
+              <div class="entry-item"><div class="label">Entrée approx.</div><div class="val">${zones.entry}</div></div>
+              <div class="entry-item"><div class="label">Support proche</div><div class="val">${zones.support}</div></div>
+              <div class="entry-item"><div class="label">Résistance</div><div class="val">${zones.resist}</div></div>
+              <div class="entry-item"><div class="label">Stop théorique</div><div class="val">${zones.stop}</div></div>
+              <div class="entry-item"><div class="label">Objectif 1</div><div class="val">${zones.t1}</div></div>
+              <div class="entry-item"><div class="label">Objectif 2</div><div class="val">${zones.t2}</div></div>
+            </div>
+          </div>` : ''}
+
+          <button class="btn-why" data-sym="${sym.id}">Pourquoi ?</button>
+          <div class="why-panel" id="why-${sym.id}">
+            <p>${exp.text}</p>
+            <h4>Points positifs</h4>
+            <ul>${exp.pos.map(p => `<li class="pos">✓ ${p}</li>`).join('') || '<li>—</li>'}</ul>
+            <h4>Points d'attention</h4>
+            <ul>${exp.neg.map(p => `<li class="neg">⚠ ${p}</li>`).join('') || '<li>—</li>'}</ul>
+          </div>
+        </div>
+      `;
+    }
+
+    function render() {
+      const app = document.getElementById('app');
+      const updateEl = document.getElementById('lastUpdate');
+
+      if (state.loading && !Object.keys(state.data).length) {
+        app.innerHTML = `<div class="loading"><div class="spinner"></div>Récupération des données de marché...</div>`;
+        updateEl.textContent = 'Chargement...';
+        return;
+      }
+
+      if (state.error && !Object.keys(state.data).length) {
+        app.innerHTML = `<div class="error-box">⚠ Données indisponibles<br><small>${state.error}</small><br><button class="refresh-btn" style="margin-top:10px" onclick="loadAll()">Réessayer</button></div>`;
+        updateEl.textContent = 'Erreur';
+        return;
+      }
+
+      let html = '';
+      for (const sym of SYMBOLS) {
+        html += renderCard(sym);
+      }
+      if (state.error) {
+        html = `<div class="error-box">⚠ Mise à jour partielle : ${state.error}</div>` + html;
+      }
+      app.innerHTML = html;
+
+      // Update bar
+      if (state.lastFetch) {
+        const ageMin = Math.round((Date.now() - state.lastFetch) / 60000);
+        updateEl.textContent = `Dernière mise à jour : ${new Date(state.lastFetch).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'})}${ageMin > 1 ? ` · données âgées de ${ageMin} min` : ''}`;
+      }
+
+      // Alerts
+      const alertsSec = document.getElementById('alertsSection');
+      const alertsList = document.getElementById('alertsList');
+      if (state.alerts.length) {
+        alertsSec.style.display = 'block';
+        alertsList.innerHTML = state.alerts.map(a =>
+          `<div class="alert-item ${a.type === 'new' ? 'new' : ''}">${a.text}</div>`
+        ).join('');
+      } else {
+        alertsSec.style.display = 'none';
+      }
+
+      // Event listeners
+      document.querySelectorAll('.btn-why').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.sym;
+          const panel = document.getElementById(`why-${id}`);
+          panel.classList.toggle('open');
+          btn.classList.toggle('open');
+        });
+      });
+      document.querySelectorAll('.chart-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          const sym = tab.dataset.sym;
+          const iv = tab.dataset.iv;
+          state.activeChartInterval[sym] = iv;
+          document.querySelectorAll(`.chart-tab[data-sym="${sym}"]`).forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          updateChartData(sym);
+        });
+      });
+    }
+
+    // ===================== INIT =====================
+    document.getElementById('refreshBtn').addEventListener('click', () => loadAll());
+
+    // Register SW
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+
+    // First load
+    loadAll();
+    // Auto refresh
+    setInterval(() => {
+      if (!document.hidden) loadAll();
+    }, REFRESH_MS);
+
+    // Visibility
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && state.lastFetch && Date.now() - state.lastFetch > 60000) {
+        loadAll();
+      }
+    });
+  </script>
+</body>
+</html>
